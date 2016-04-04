@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Structured Gradient Tree Boosting</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+      img { 
+        max-width:  100%; 
+        max-height:  40%; 
+      }
+      blockquote {
+        padding: 0 15px;
+        border-left: 4px solid #ddd;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+
+
+class: center, middle
+
+# Structured Gradient Tree Boosting
+
+
+<!-- ![](img/daily_boost_podcast_3001.jpg "Daily Boost") -->
+
+![](img/6-grinch-stealing-tree-260x300.jpg "grinch")
+
+<!-- --- -->
+
+<!-- [TOC] -->
+<!-- # 1. Decision Trees -->
+<!-- # 1. Boosting -->
+<!-- # 2. Structured Prediction -->
+
+---
+
+
+# Boosting
+
+
+### Combine lots of weak learners (often decision trees) together into a strong learner
+
+---
+
+
+# A Brief History of Boosting
+
+### **Arcing** *(Breiman '96, '97)* - reweight examples during training
+
+### **AdaBoost** *(Freund and Schapire, '97)* - adaptive arcing + boosting
+
+### **LogitBoost** *(Friedman et al., '98)* - shows AdaBoost is optimizing exp-loss, generalizes to log-loss
+
+### **Gradient Boosting** *(Friedman, '99)*  - generalize to any diff'ble loss f'n
+
+### **AnyBoost** <!-- / **Functional Gradient Descent** --> *(Mason et al, '99)* - "Boosting Algorithms as Gradient Descent in Function Space"
+
+---
+
+# Gradient Boosting = Functional Gradient Descent
+
+<!-- .footnote[] -->
+
+
+---
+
+# Computation graph for linear regression
+
+## One datapoint, *<b>x</b><sup>(i)</sup>, y<sup>(i)</sup>*:
+
+![](img/regr-compgraph.svg "Linear regression computation graph, one datapoint")
+
+???
+
+green = data
+blue = parameters
+red = function
+star = objective
+
+you can find the partial derivative of any node wrt any other node
+
+---
+
+## All datapoints:
+
+![](img/regr-compgraph2.svg "Linear regression computation graph, all data")
+
+---
+
+## Black box scoring function
+
+![](img/regr-compgraph3.svg "")
+
+
+---
+
+# Functional
+
+## Take a function \`f\`, return a number.
+
+
+
+---
+
+# Functional
+
+## Take a function \`f\`, return a number.
+
+### Example:
+
+> \\( \cdot \big|_\mathbf{x} \\), *"evaluation at \\(\mathbf{x}\\)", where*
+
+> \\( f \big|_\mathbf{x} = f(\mathbf{x}) \\)
+
+
+
+---
+
+# Functional
+
+## Take a function \`f\`, return a number.
+
+### Example:
+
+> \\( \cdot \big|_\mathbf{x} \\), *"evaluation at \\(\mathbf{x}\\)", where*
+
+> \\( f \big|_\mathbf{x} = f(\mathbf{x}) \\)
+
+
+### Example:
+
+> $$ \mathcal{L}(f) = \sum_{i=1}^N { \mathcal{L} (f (\mathbf{x}^{(i)}), y^{(i)})  } $$  
+
+
+<!-- $$ = \sum_{i=1}^N { \mathcal{L} (f \big|_{\mathbf{x^{(i)}}}, y^{(i)})  } $$   -->
+
+
+<!-- (f \bigg|_{\mathbf{x}}, y^{(i)}) } $$ -->
+
+
+
+
+    </textarea>
+    <!-- <script src="https://gnab.github.io/remark/downloads/remark-latest.min.js"> -->
+    <script src="js/remark-latest.min.js"></script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+    <script src="js/MathJax-master/MathJax.js?config=TeX-MML-AM_HTMLorMML"></script>
+  </body>
+<!-- # Structured Prediction
+
+---
+
+# Factor Graphs
+
+---
+
+# Example: Bigram sequence model
+
+---
+
+# Decision Trees
+
+---
+
+```haskell
+
+data DecisionTree i o = Leaf { prediction :: o } | Node {
+      test :: i -> Bool,
+      ifTrue :: DecisionTree i o,
+      ifFalse :: DecisionTree i o
+    }
+```
+
+### For example:
+
+![](img/tree1.png "Tree 1")
+
+---
+
+![](img/tree1bound.png "Tree 1 Boundary")
+![](img/tree1.png "Tree 1")
+
+.footnote[*(images due to William Chen)*]
+---
+
+![](img/tree2bound.png "Tree 2 Boundary")
+![](img/tree2.png "Tree 2")
+
+.footnote[*(images due to William Chen)*]
+
+???
+> High variance
+
+--- -->
+</html>
