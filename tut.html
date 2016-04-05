@@ -14,10 +14,12 @@
         font-weight: normal;
       }
       .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
-      img { 
-        max-width:  100%; 
-        max-height:  40%; 
+      img {
+        max-width:  80%; 
+        max-height:  40%;
+        text-align: center;
       }
+      /*img[alt=cg4] { width: 60%; }*/
       blockquote {
         padding: 0 15px;
         border-left: 4px solid #ddd;
@@ -28,22 +30,32 @@
     <textarea id="source">
 
 
-
 class: center, middle
 
-# Structured Gradient Tree Boosting
 
 
-<!-- ![](img/daily_boost_podcast_3001.jpg "Daily Boost") -->
+# Gradient Boosting
 
-![](img/6-grinch-stealing-tree-260x300.jpg "grinch")
 
-<!-- --- -->
+$$
+\newcommand{\x}[0]{\mathbf{x}}
+\newcommand{\i}[0]{^{(i)}}
+\newcommand{\xi}[0]{\x\i}
+\newcommand{\yi}[0]{y\i}
+\newcommand{\si}[0]{s\i}
+\newcommand{\fi}[0]{f(\xi)}
+$$
 
-<!-- [TOC] -->
-<!-- # 1. Decision Trees -->
-<!-- # 1. Boosting -->
-<!-- # 2. Structured Prediction -->
+$$
+\newcommand{\phit}[0]{\phi_{ t-1 }}
+$$
+
+$$
+\newcommand{\fto}[0]{f_{ t-1 }}
+$$
+
+$$ \newcommand{\ft}[0]{f_{t+1}} $$
+
 
 ---
 
@@ -52,6 +64,33 @@ class: center, middle
 
 
 ### Combine lots of weak learners (often decision trees) together into a strong learner
+
+
+---
+
+
+# Boosting
+
+
+### Combine lots of weak learners (often decision trees) together into a strong learner
+
+
+
+$$
+f(\x) = \phi_1(\x) + \phi_2(\x) + \ldots + \phi_t(\x),
+$$
+
+$$
+\phi_i \in \Phi
+$$
+
+
+???
+
+
+This is gonna be different than just straight up ensembling,
+where you learn a bunch of models separately then jam them together at the end.
+We're going to choose these \\(\phi \\)s specially to fix each others weaknesses.
 
 ---
 
@@ -68,89 +107,288 @@ class: center, middle
 
 ### **AnyBoost** <!-- / **Functional Gradient Descent** --> *(Mason et al, '99)* - "Boosting Algorithms as Gradient Descent in Function Space"
 
----
+???
 
-# Gradient Boosting = Functional Gradient Descent
+AdaBoost was described very procedurally...
+> Learn a decision tree,
+
+> look at how well it does,
+
+> reweight examples to give more weight to wrongly classified examples,
+
+> repeat
+
+Later papers gradually figured out a more principled way to talk about it,
+so I'm just going to start there.
+
+---
+class: center middle
+
+
+# Gradient Boosting
+# =
+# Functional Gradient Descent
 
 <!-- .footnote[] -->
 
 
 ---
 
-# Computation graph for linear regression
+## Computation graph for a generalized linear model
 
-## One datapoint, *<b>x</b><sup>(i)</sup>, y<sup>(i)</sup>*:
+### one datapoint, \\(\(\x^{(i)}, y^{(i)}\) \\):
 
-![](img/regr-compgraph.svg "Linear regression computation graph, one datapoint")
+![](img/regr-compgraph.svg "computation graph, one datapoint")
 
 ???
 
-green = data
-blue = parameters
-red = function
-star = objective
 
-you can find the partial derivative of any node wrt any other node
+> green = data
+> 
+> blue = parameters
+> 
+> red = function
+
+The advantage of thinking in terms of a computation graph, is
+you can run AD and find the partial derivative of any node wrt any other node.
+
+For grad descent, you want to find the derivative of loss wrt w_i
 
 ---
 
-## All datapoints:
+## all datapoints:
 
-![](img/regr-compgraph2.svg "Linear regression computation graph, all data")
+![](img/regr-compgraph2.svg "computation graph, all data")
+
+???
+
+> star = objective
+
+There's actually only one version of the parameters of course,
+just copied them out to make the graph cleaner.
+
+Derivatives distribute over addition, so you can take derivatives separately,
+and add them up at the end.
 
 ---
 
-## Black box scoring function
+## GLM -> black box scoring function, \`f\`
 
 ![](img/regr-compgraph3.svg "")
 
 
----
+???
 
-# Functional
-
-## Take a function \`f\`, return a number.
-
-
+What if we get rid of the parameters, and just think of that whole subgraph as
+a black box non-parametric scoring function?
 
 ---
 
-# Functional
+class: center, middle
 
-## Take a function \`f\`, return a number.
+# Can we backprop into \`f\`?
 
-### Example:
 
-> \\( \cdot \big|_\mathbf{x} \\), *"evaluation at \\(\mathbf{x}\\)", where*
+???
+even if f doesn't have parameters, or we don't know the parametrization of f?
 
-> \\( f \big|_\mathbf{x} = f(\mathbf{x}) \\)
+what would that look like?
 
+---
+
+
+![cg4](img/regr-compgraph4.svg "")
+
+
+$$
+g^{ (i) } =  \frac{\partial}{\partial s} L(s, y^{ (i) }) \big|_{ s=f(\xi) }
+$$
+
+$$
+h^{ (i) } = \frac{\partial^2}{\partial s^2} L(s, y^{ (i) }) \big|_{ s=f(\xi) }
+$$
+
+???
+
+we can definitely backprop as far as the node that reps the output of f
+
+Note that the only way f can have an effect on the loss value is by changing its
+output on the xi's.
+Whatever f does away from the xi's doesn't matter.
+
+So if we want to tweak \`f\` to improve the loss, we have to tweak what
+\`f\`' does with the xi's.
+
+---
+
+Fix
+
+$$
+f_{t-1} = \phi_1 + \ldots + \phit
+$$
+
+Find
+\\(
+\phi_t
+\\) 
+so that 
+
+$$
+f_t = \fto + \phi_t
+$$
+
+has lower loss.
+
+### *"Stagewise Additive Training"*
+
+### Think of \\( \phi_t \\) as a gradient step (or Newton step) in function space.
+
+
+???
+
+When I talk about tweeaking \`f\`, the way
+we're gonna do that is by adding a function \`\phi \` to it.
+
+This method of keeping the previous \`\phi\`s fixed and adding a new one
+is called Stagewise Additive Training.
+
+---
+
+Let \\(s^{ (i) } = \phi_t(\xi )\\)
+
+???
+
+how much we tweak the \`i^{th}\` output.
+
+---
+
+
+Let \\(s^{ (i) } = \phi_t(\xi )\\)
+
+
+### Taylor expansion:
+
+$$
+Loss = \sum_{i=1}^n [  L(\fto(\xi), \yi) + g\i s\i + \frac{1}{2} h\i (s\i)^2  ]
+$$
+
+where
+
+$$
+g\i =  \frac{\partial}{\partial s} L(s, y^{ (i) }) \big|_{ s=\fto(\xi) }
+$$
+
+$$
+h\i = \frac{\partial^2}{\partial s^2} L(s, y^{ (i) }) \big|_{ s=\fto(\xi) }
+$$
+
+???
+
+look at how that effects the loss,
+remembering that g and h are the 1st and 2nd partial derivatives wrt \\( s\i \\).
+
+---
+
+Let \\(s^{ (i) } = \phi_t(\xi )\\)
+
+
+### Taylor expansion:
+
+$$
+Loss = \sum_{i=1}^n [  L(\fto(\xi), \yi) + g\i s\i + \frac{1}{2} h\i (s\i)^2  ]
+$$
+
+
+
+$$
+= \sum_{i=1}^n [  g\i \si + \frac{1}{2} h\i (s\i)^2 ] + C
+$$
+
+???
+
+say we're going to choose a \\( \phi \\) that tries to minimize this.
+
+if we're minimizing, constants don't matter
+
+---
+
+
+
+Let \\(s^{ (i) } = \phi_t(\xi )\\)
+
+
+### Taylor expansion:
+
+$$
+Loss = \sum_{i=1}^n [  L(\fto(\xi), \yi) + g\i s\i + \frac{1}{2} h\i (s\i)^2  ]
+$$
+
+
+
+$$
+= \sum_{i=1}^n [  g\i \si + \frac{1}{2} h\i (s\i)^2 ] + C
+$$
+
+
+$$
+\propto \sum_{i=1}^n  h\i (\si + \frac{g\i}{h\i})^2  + C
+$$
+
+???
+
+neither do constant factors
+
+---
+
+## This is a weighted regression, where the \`i^{th}\` training example looks like
+
+input: \\( \xi \\)
+
+output: \\( -\frac{g\i}{h\i} \\)
+
+weight: \\( {h\i} \\)
 
 
 ---
 
-# Functional
+## This is a weighted regression, where the \`i^{th}\` training example looks like
 
-## Take a function \`f\`, return a number.
+input: \\( \xi \\)
 
-### Example:
+output: \\( -\frac{g\i}{h\i} \\)
 
-> \\( \cdot \big|_\mathbf{x} \\), *"evaluation at \\(\mathbf{x}\\)", where*
+weight: \\( {h\i} \\)
 
-> \\( f \big|_\mathbf{x} = f(\mathbf{x}) \\)
-
-
-### Example:
-
-> $$ \mathcal{L}(f) = \sum_{i=1}^N { \mathcal{L} (f (\mathbf{x}^{(i)}), y^{(i)})  } $$  
+### learn a weak model (e.g. regression tree) \\( \phi_t \\) on this weighted data.
 
 
-<!-- $$ = \sum_{i=1}^N { \mathcal{L} (f \big|_{\mathbf{x^{(i)}}}, y^{(i)})  } $$   -->
+---
 
 
-<!-- (f \bigg|_{\mathbf{x}}, y^{(i)}) } $$ -->
+## This gives us a procedure (**AnyBoost**?).
+
+> Start with \\(f_1 = \phi_1 = 0 \\).
+
+> Repeat for \`t = 2, \ldots, T\`
+
+>> Take the partial derivs of the loss w.r.t. the value of \\( \fto(\xi)  \\).
+
+>> That gives you a quadratic approximation of the loss w.r.t. the new \\( \phi_t \\).
+
+>> Learn a weak model \\( \phi_t \\) that tries to minimize that quadratic approximation.
+>> (Any model that can do weighted regression can be used here.)
 
 
+???
+
+This is where the AdaBoost paper started, and I went backwards to show
+how you arrive at this procedure.
+
+---
+
+class: middle, center
+
+Questions?
 
 
     </textarea>
@@ -161,6 +399,53 @@ you can find the partial derivative of any node wrt any other node
     </script>
     <script src="js/MathJax-master/MathJax.js?config=TeX-MML-AM_HTMLorMML"></script>
   </body>
+
+
+  <!-- # Functional
+
+## Take a function \`f\`, return a number.
+
+
+
+---
+
+# Functional
+
+## Take a function \`f\`, return a number.
+
+### Example:
+
+> \\( \cdot \big|_\x \\), *"evaluation at \\(\x\\)", where*
+
+> \\( f \big|_\x = f(\x) \\)
+
+
+
+---
+
+# Functional
+
+## Take a function \`f\`, return a number.
+
+### Example:
+
+> \\( \cdot \big|_\x \\), *"evaluation at \\(\x\\)", where*
+
+> \\( f \big|_\x = f(\x) \\)
+
+
+### Example:
+
+> $$ Loss(f) = \sum_{i=1}^n { L (f (\x^{(i)}), y^{(i)})  } $$  
+
+
+
+---
+ -->
+
+<!-- > \\( \frac{ \partial}{\partial f} f \big|_\x = \\{ g \mid g(\x) = 1 \\}  \\) -->
+
+
 <!-- # Structured Prediction
 
 ---
